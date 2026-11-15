@@ -1,15 +1,17 @@
 require('dotenv').config();
 const express = require('express');
+const cookieParser = require('cookie-parser');
 const db = require('./config/db');
+const authRoutes = require('./routes/authRoutes');
 
 const app = express();
 app.use(express.json());
+app.use(cookieParser());
 
 app.get('/api/hello', (req, res) => {
   res.json({ success: true, message: 'RentEase API is running' });
 });
 
-// Test route: checks the database connection
 app.get('/api/health/db', async (req, res) => {
   try {
     const [rows] = await db.query(
@@ -20,6 +22,15 @@ app.get('/api/health/db', async (req, res) => {
   } catch (err) {
     res.status(500).json({ success: false, error: { code: 'DB_ERROR', message: err.message } });
   }
+});
+
+// Routes
+app.use('/api/auth', authRoutes);
+
+// Catches any unexpected error so the server does not crash
+app.use((err, req, res, next) => {
+  console.error(err);
+  res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: 'Something went wrong' } });
 });
 
 const PORT = process.env.PORT || 3000;
